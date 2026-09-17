@@ -1,0 +1,5 @@
+$kind: http-request
+name: Logout
+order: 4000
+method: POST
+url: 'http://localhost:5000/customers/logout'

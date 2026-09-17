@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Profile
+order: 3000
+method: GET
+url: 'http://localhost:5000/customers/me'
