@@ -1,0 +1,190 @@
+{
+  "info": {
+    "_postman_id": "shopkart-lab04-wishlist-collection",
+    "name": "ShopKart Lab 04 — Wishlist APIs",
+    "description": "Comprehensive Postman test collection for ShopKart Engineering Lab 04 Wishlist APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "6a9ec400eda8eb1f54723d02",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Setup - Login & Save Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const jsonData = pm.response.json();",
+              "if (jsonData.token) {",
+              "  pm.collectionVariables.set('token', jsonData.token);",
+              "  console.log('Token stored in collection variable');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"dhaval_test_wishlist@example.com\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/customers/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["customers", "login"]
+        }
+      }
+    },
+    {
+      "name": "1. Add Product to Wishlist (POST /wishlist/:productId)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/wishlist/{{productId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["wishlist", "{{productId}}"]
+        },
+        "description": "Adds product to current authenticated user's wishlist."
+      }
+    },
+    {
+      "name": "2. Duplicate Prevention (POST /wishlist/:productId -> 409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/wishlist/{{productId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["wishlist", "{{productId}}"]
+        },
+        "description": "Calling again with already wishlisted productId should return 409 Conflict."
+      }
+    },
+    {
+      "name": "3. Get Wishlist (GET /wishlist -> populated)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/wishlist",
+          "host": ["{{baseUrl}}"],
+          "path": ["wishlist"]
+        },
+        "description": "Returns current user's populated wishlist with count and product details."
+      }
+    },
+    {
+      "name": "4. Get Wishlist Count (GET /wishlist/count - Bonus)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/wishlist/count",
+          "host": ["{{baseUrl}}"],
+          "path": ["wishlist", "count"]
+        },
+        "description": "Fast endpoint returning saved items count."
+      }
+    },
+    {
+      "name": "5. Toggle Wishlist (PATCH /wishlist/:productId/toggle - Bonus)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/wishlist/{{productId}}/toggle",
+          "host": ["{{baseUrl}}"],
+          "path": ["wishlist", "{{productId}}", "toggle"]
+        },
+        "description": "Toggles item in user's wishlist."
+      }
+    },
+    {
+      "name": "6. Remove Product from Wishlist (DELETE /wishlist/:productId)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/wishlist/{{productId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["wishlist", "{{productId}}"]
+        },
+        "description": "Removes product reference from current user's wishlist."
+      }
+    },
+    {
+      "name": "7. Unauthenticated Wishlist Request (GET /wishlist -> 401)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/wishlist",
+          "host": ["{{baseUrl}}"],
+          "path": ["wishlist"]
+        },
+        "description": "Calling protected wishlist endpoints without a token returns 401 Unauthorized."
+      }
+    }
+  ]
+}

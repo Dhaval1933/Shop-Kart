@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { getProducts } from "../services/api";
+import { getProducts, getWishlist } from "../services/api";
 import ProductCard from "../components/ProductCard";
 import SearchBar from "../components/SearchBar";
 import {
@@ -15,12 +15,38 @@ export default function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [wishlistIds, setWishlistIds] = useState(new Set());
 
   // Filter & Search states
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [category, setCategory] = useState("All Categories");
   const [sort, setSort] = useState("default");
+
+  // Fetch current user's wishlist IDs
+  const loadWishlistIds = async () => {
+    try {
+      const data = await getWishlist();
+      if (data && Array.isArray(data.wishlist)) {
+        setWishlistIds(new Set(data.wishlist.map((item) => item._id)));
+      }
+    } catch {
+      // unauthenticated
+    }
+  };
+
+  useEffect(() => {
+    loadWishlistIds();
+
+    const handleWishlistUpdated = () => {
+      loadWishlistIds();
+    };
+
+    window.addEventListener("wishlistUpdated", handleWishlistUpdated);
+    return () => {
+      window.removeEventListener("wishlistUpdated", handleWishlistUpdated);
+    };
+  }, []);
 
   // Debounce search input by 300ms
   useEffect(() => {
@@ -192,7 +218,11 @@ export default function Products() {
         {!loading && !error && products.length > 0 && (
           <div className="products-grid" id="products-grid">
             {products.map((product) => (
-              <ProductCard key={product._id} product={product} />
+              <ProductCard
+                key={product._id}
+                product={product}
+                isWishlistedInitially={wishlistIds.has(product._id)}
+              />
             ))}
           </div>
         )}

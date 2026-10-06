@@ -5,6 +5,8 @@ require("dotenv").config();
 
 const customerRoutes = require("./routes/customer.routes");
 const productRoutes = require("./routes/product.routes");
+const wishlistRoutes = require("./routes/wishlist.routes");
+const cartRoutes = require("./routes/cart.routes");
 
 const app = express();
 
@@ -38,21 +40,25 @@ app.get("/", (req, res) => {
 });
 app.use("/customers", customerRoutes);
 app.use("/products", productRoutes);
+app.use("/wishlist", wishlistRoutes);
+app.use("/cart", cartRoutes);
 
 
-// Connect to MongoDB and start server
+// Connect to MongoDB and start server if executed directly
 const PORT = process.env.PORT || 5000;
 
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log("MongoDB connected");
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+if (require.main === module) {
+  mongoose
+    .connect(process.env.MONGODB_URI)
+    .then(() => {
+      console.log("MongoDB connected");
+      app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error("MongoDB connection error:", err.message);
     });
-  })
-  .catch((err) => {
-    console.error("MongoDB connection error:", err.message);
-  });
+}
 
 module.exports = app;

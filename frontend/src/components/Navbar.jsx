@@ -1,11 +1,54 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { ShoppingBag, LogIn, UserPlus, LogOut, Home, User, Loader2 } from "lucide-react";
-import { logoutCustomer } from "../services/api";
+import {
+  ShoppingBag,
+  LogIn,
+  UserPlus,
+  LogOut,
+  Home,
+  User,
+  Loader2,
+  Heart,
+  ShoppingCart,
+} from "lucide-react";
+import { logoutCustomer, getWishlistCount } from "../services/api";
+import { useCart } from "../context/CartContext";
 
 export default function Navbar({ user, onLogoutSuccess }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const { cartCount } = useCart();
   const navigate = useNavigate();
+
+  // Fetch Wishlist count from backend when authenticated
+  const fetchCount = async () => {
+    if (!user) {
+      setWishlistCount(0);
+      return;
+    }
+    try {
+      const data = await getWishlistCount();
+      if (data && typeof data.count === "number") {
+        setWishlistCount(data.count);
+      }
+    } catch {
+      // Gracefully ignore error on count fetch
+    }
+  };
+
+  useEffect(() => {
+    fetchCount();
+
+    // Listen for custom wishlist update events dispatched across the app
+    const handleWishlistUpdated = () => {
+      fetchCount();
+    };
+
+    window.addEventListener("wishlistUpdated", handleWishlistUpdated);
+    return () => {
+      window.removeEventListener("wishlistUpdated", handleWishlistUpdated);
+    };
+  }, [user]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -15,6 +58,7 @@ export default function Navbar({ user, onLogoutSuccess }) {
       console.error("Logout request failed (clearing state anyway):", err);
     } finally {
       setIsLoggingOut(false);
+      setWishlistCount(0);
       if (onLogoutSuccess) {
         onLogoutSuccess();
       }
@@ -29,7 +73,11 @@ export default function Navbar({ user, onLogoutSuccess }) {
     <header className="navbar">
       <div className="nav-container">
         {/* Brand Logo */}
-        <Link to={user ? "/home" : "/login"} className="nav-brand" id="nav-brand-link">
+        <Link
+          to={user ? "/home" : "/products"}
+          className="nav-brand"
+          id="nav-brand-link"
+        >
           <div className="brand-icon-wrapper">
             <ShoppingBag size={20} />
           </div>
@@ -39,8 +87,21 @@ export default function Navbar({ user, onLogoutSuccess }) {
           </span>
         </Link>
 
-        {/* Nav items */}
+        {/* Nav items: Home | Products | Wishlist | Logout */}
         <nav className="nav-links">
+          {user && (
+            <NavLink
+              to="/home"
+              className={({ isActive }) =>
+                `nav-link ${isActive ? "active" : ""}`
+              }
+              id="nav-link-home"
+            >
+              <Home size={17} />
+              <span>Home</span>
+            </NavLink>
+          )}
+
           <NavLink
             to="/products"
             className={({ isActive }) =>
@@ -52,22 +113,53 @@ export default function Navbar({ user, onLogoutSuccess }) {
             <span>Products</span>
           </NavLink>
 
+          {/* Section 8 & Bonus Task 24: Wishlist Link with dynamic backend count */}
+          <NavLink
+            to="/wishlist"
+            className={({ isActive }) =>
+              `nav-link ${isActive ? "active" : ""}`
+            }
+            id="nav-link-wishlist"
+          >
+            <Heart size={17} />
+            <span>Wishlist</span>
+            {wishlistCount > 0 && (
+              <span className="nav-badge-count" id="nav-wishlist-count">
+                {wishlistCount}
+              </span>
+            )}
+          </NavLink>
+
+          {/* Lab 05 Task 16: Cart Link with dynamic derived total quantity */}
+          <NavLink
+            to="/cart"
+            className={({ isActive }) =>
+              `nav-link ${isActive ? "active" : ""}`
+            }
+            id="nav-link-cart"
+          >
+            <ShoppingCart size={17} />
+            <span>Cart</span>
+            {cartCount > 0 && (
+              <span className="nav-badge-count nav-cart-badge" id="nav-cart-count">
+                {cartCount}
+              </span>
+            )}
+          </NavLink>
+
           {user ? (
             <>
-              <NavLink
-                to="/home"
-                className={({ isActive }) =>
-                  `nav-link ${isActive ? "active" : ""}`
-                }
-                id="nav-link-home"
+              <div
+                className="nav-user-badge"
+                id="nav-user-profile"
+                title={user.email}
               >
-                <Home size={17} />
-                <span>Home</span>
-              </NavLink>
-
-              <div className="nav-user-badge" id="nav-user-profile" title={user.email}>
                 <div className="nav-avatar-mini">
-                  {user.fullName ? user.fullName.charAt(0).toUpperCase() : <User size={14} />}
+                  {user.fullName ? (
+                    user.fullName.charAt(0).toUpperCase()
+                  ) : (
+                    <User size={14} />
+                  )}
                 </div>
                 <span>{user.fullName || "Customer"}</span>
               </div>

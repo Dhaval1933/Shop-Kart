@@ -1,6 +1,11 @@
-﻿node_modules/
+node_modules/
 backend/node_modules/
 frontend/node_modules/
 .env
 backend/.env
 frontend/.env
+
+# Viva Preparation Notes (Excluded from Git)
+VIVA_PREP_ALL_LABS.md
+*viva*
+*VIVA*

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { getProductById } from "../services/api";
+import { getProductById, addToWishlist, removeFromWishlist, getWishlist } from "../services/api";
 import {
   ArrowLeft,
   ShoppingBag,
@@ -14,7 +14,10 @@ import {
   Tag,
   AlertCircle,
   Sparkles,
+  Heart,
+  Loader2,
 } from "lucide-react";
+import { useCart } from "../context/CartContext";
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -24,6 +27,12 @@ export default function ProductDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cartFeedback, setCartFeedback] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isSavingWishlist, setIsSavingWishlist] = useState(false);
+  const [wishlistFeedback, setWishlistFeedback] = useState(null);
+
+  const { addToCart, isProductInCart, actionLoadingId, getProductCartQuantity } =
+    useCart();
 
   useEffect(() => {
     let isMounted = true;
@@ -39,6 +48,16 @@ export default function ProductDetails() {
           } else {
             setError("Product not found");
           }
+        }
+
+        // Check if currently saved in wishlist
+        try {
+          const wlData = await getWishlist();
+          if (isMounted && wlData && Array.isArray(wlData.wishlist)) {
+            setIsWishlisted(wlData.wishlist.some((item) => item._id === id));
+          }
+        } catch {
+          // Ignore if unauthenticated
         }
       } catch (err) {
         if (isMounted) {
@@ -65,9 +84,77 @@ export default function ProductDetails() {
     };
   }, [id]);
 
-  // Handle Add to Cart button (UI only for Lab-03)
-  const handleAddToCart = () => {
-    setCartFeedback(true);
+  // Handle Wishlist Toggle
+  const handleWishlistToggle = async () => {
+    if (isSavingWishlist) return;
+
+    setIsSavingWishlist(true);
+    setWishlistFeedback(null);
+
+    try {
+      if (isWishlisted) {
+        await removeFromWishlist(id);
+        setIsWishlisted(false);
+        setWishlistFeedback({ type: "info", message: "Removed from Wishlist" });
+      } else {
+        await addToWishlist(id);
+        setIsWishlisted(true);
+        setWishlistFeedback({ type: "success", message: "Added to Wishlist!" });
+      }
+
+      window.dispatchEvent(
+        new CustomEvent("wishlistUpdated", {
+          detail: { productId: id, isWishlisted: !isWishlisted },
+        })
+      );
+    } catch (err) {
+      console.error("Wishlist action failed:", err);
+      const status = err.response ? err.response.status : null;
+      if (status === 401) {
+        setWishlistFeedback({
+          type: "error",
+          message: "Please log in to save to your wishlist.",
+          action: "login",
+        });
+      } else if (status === 409) {
+        setIsWishlisted(true);
+        setWishlistFeedback({
+          type: "info",
+          message: "Product is already in your wishlist.",
+        });
+      } else {
+        setWishlistFeedback({
+          type: "error",
+          message: "Unable to save product. Please try again.",
+        });
+      }
+    } finally {
+      setIsSavingWishlist(false);
+      setTimeout(() => {
+        setWishlistFeedback(null);
+      }, 4000);
+    }
+  };
+
+  // Handle Add to Cart button (Lab 05)
+  const isAddingToCart = actionLoadingId === id;
+  const inCart = isProductInCart(id);
+  const cartQty = getProductCartQuantity(id);
+
+  const handleAddToCart = async () => {
+    if (isAddingToCart || isOutOfStock) return;
+    const result = await addToCart(id);
+    if (result.success) {
+      setCartFeedback(result.message || "Added to cart!");
+    } else {
+      if (result.status === 401) {
+        navigate("/login", {
+          state: { message: "Please log in to add items to your cart." },
+        });
+      } else {
+        alert(result.message || "Could not add to cart.");
+      }
+    }
     setTimeout(() => {
       setCartFeedback(false);
     }, 4000);
@@ -232,22 +319,90 @@ export default function ProductDetails() {
               <div className="inline-cart-feedback" id="inline-cart-feedback">
                 <CheckCircle2 size={18} />
                 <span>
-                  <strong>{product.name}</strong> added to cart! Cart checkout will arrive in Lab-04.
+                  <strong>{product.name}</strong> added to cart!
                 </span>
               </div>
             )}
 
-            {/* Add to Cart Action */}
+            {/* Inline Wishlist Feedback */}
+            {wishlistFeedback && (
+              <div
+                className={`card-feedback-banner ${wishlistFeedback.type}`}
+                id="details-wishlist-feedback"
+              >
+                {wishlistFeedback.type === "error" ? (
+                  <AlertCircle size={15} />
+                ) : (
+                  <CheckCircle2 size={15} />
+                )}
+                <span>{wishlistFeedback.message}</span>
+                {wishlistFeedback.action === "login" && (
+                  <button
+                    type="button"
+                    className="btn-feedback-action"
+                    onClick={() => navigate("/login")}
+                  >
+                    Log In
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Add to Cart & Wishlist Actions */}
             <div className="product-actions-block">
               <button
                 type="button"
-                className="btn-add-to-cart"
+                className={`btn-add-to-cart ${isAddingToCart ? "adding" : ""}`}
                 id="btn-add-to-cart"
-                disabled={isOutOfStock}
+                disabled={isOutOfStock || isAddingToCart}
                 onClick={handleAddToCart}
               >
-                <ShoppingCart size={20} />
-                <span>{isOutOfStock ? "Out of Stock" : "Add to Cart"}</span>
+                {isAddingToCart ? (
+                  <>
+                    <Loader2 size={20} className="spinner" />
+                    <span>[ Adding... ]</span>
+                  </>
+                ) : isOutOfStock ? (
+                  <>
+                    <XCircle size={20} />
+                    <span>Out of Stock</span>
+                  </>
+                ) : inCart ? (
+                  <>
+                    <ShoppingCart size={20} />
+                    <span>Add Another ({cartQty})</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart size={20} />
+                    <span>Add to Cart</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className={`btn-details-wishlist ${isWishlisted ? "wishlisted" : ""}`}
+                id="btn-details-wishlist"
+                disabled={isSavingWishlist}
+                onClick={handleWishlistToggle}
+              >
+                {isSavingWishlist ? (
+                  <>
+                    <Loader2 size={18} className="spinner" />
+                    <span>Saving...</span>
+                  </>
+                ) : isWishlisted ? (
+                  <>
+                    <Heart size={18} fill="currentColor" />
+                    <span>Saved to Wishlist ♥</span>
+                  </>
+                ) : (
+                  <>
+                    <Heart size={18} />
+                    <span>Add to Wishlist</span>
+                  </>
+                )}
               </button>
 
               <Link
