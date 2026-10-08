@@ -10,6 +10,7 @@ import {
   Loader2,
   Heart,
   ShoppingCart,
+  Package,
 } from "lucide-react";
 import { logoutCustomer, getWishlistCount } from "../services/api";
 import { useCart } from "../context/CartContext";
@@ -146,6 +147,19 @@ export default function Navbar({ user, onLogoutSuccess }) {
               </span>
             )}
           </NavLink>
+
+          {user && (
+            <NavLink
+              to="/orders"
+              className={({ isActive }) =>
+                `nav-link ${isActive ? "active" : ""}`
+              }
+              id="nav-link-orders"
+            >
+              <Package size={17} />
+              <span>Orders</span>
+            </NavLink>
+          )}
 
           {user ? (
             <>

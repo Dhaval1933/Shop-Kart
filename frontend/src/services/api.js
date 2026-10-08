@@ -219,6 +219,68 @@ export const removeFromCart = async (productId) => {
   return response.data;
 };
 
+/**
+ * Lab 06: Order & Checkout APIs
+ */
+export const orderApi = axios.create({
+  baseURL: `${API_BASE_URL}/orders`,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+/**
+ * Task 4: Validate cart, create ShopKart pending order and Razorpay Order
+ * @route POST /orders/create-payment-order
+ * @param {Object} shippingAddress - { fullName, phone, addressLine1, city, state, pincode }
+ */
+export const createPaymentOrder = async (shippingAddress) => {
+  const response = await orderApi.post("/create-payment-order", { shippingAddress });
+  return response.data;
+};
+
+/**
+ * Task 4 & Step 11: Verify Razorpay signature and confirm ShopKart order
+ * @route POST /orders/verify-payment
+ * @param {Object} paymentData - { shopKartOrderId, razorpay_order_id, razorpay_payment_id, razorpay_signature }
+ */
+export const verifyPayment = async (paymentData) => {
+  const response = await orderApi.post("/verify-payment", paymentData);
+  return response.data;
+};
+
+/**
+ * Task 7: Get current user's orders
+ * @route GET /orders
+ */
+export const getOrders = async () => {
+  const response = await orderApi.get("");
+  return response.data;
+};
+
+/**
+ * Task 17: Get single order details
+ * @route GET /orders/:id
+ * @param {string} id - Order ID
+ */
+export const getOrderById = async (id) => {
+  const response = await orderApi.get(`/${id}`);
+  return response.data;
+};
+
+/**
+ * Bonus Challenge (Section 26): Update order status progression
+ * @route PATCH /orders/:id/status
+ * @param {string} id - Order ID
+ * @param {string} status - New status (PLACED, CONFIRMED, SHIPPED, DELIVERED)
+ */
+export const updateOrderStatus = async (id, status) => {
+  const response = await orderApi.patch(`/${id}/status`, { status });
+  return response.data;
+};
+
 export default authApi;
+
 
 

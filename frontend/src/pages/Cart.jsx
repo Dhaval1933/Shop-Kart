@@ -38,10 +38,7 @@ export default function Cart({ user }) {
   };
 
   const handleProceedToCheckout = () => {
-    setCheckoutFeedback(true);
-    setTimeout(() => {
-      setCheckoutFeedback(false);
-    }, 4500);
+    navigate("/checkout");
   };
 
   // State 0: Unauthenticated user

@@ -144,6 +144,12 @@ export function CartProvider({ children, user }) {
     [cartItems]
   );
 
+  // Clear cart state (used after verified checkout payment)
+  const clearCartState = useCallback(() => {
+    setCartItems([]);
+    setCartError("");
+  }, []);
+
   const value = {
     cartItems,
     cartLoading,
@@ -156,6 +162,7 @@ export function CartProvider({ children, user }) {
     updateQuantity,
     removeFromCart,
     fetchCart,
+    clearCartState,
     isProductInCart,
     getProductCartQuantity,
   };

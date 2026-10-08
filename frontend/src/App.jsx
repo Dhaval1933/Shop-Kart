@@ -8,6 +8,10 @@ import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
 import Wishlist from "./pages/Wishlist";
 import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import OrderSuccess from "./pages/OrderSuccess";
+import Orders from "./pages/Orders";
+import OrderDetails from "./pages/OrderDetails";
 import { getCustomerProfile } from "./services/api";
 import { CartProvider } from "./context/CartContext";
 
@@ -63,7 +67,7 @@ export default function App() {
                 path="/login"
                 element={
                   user ? (
-                    <Navigate to="/home" replace />
+                     <Navigate to="/home" replace />
                   ) : (
                     <Login onLoginSuccess={checkAuth} />
                   )
@@ -104,6 +108,42 @@ export default function App() {
               <Route
                 path="/cart"
                 element={<Cart user={user} />}
+              />
+
+              {/* Lab 06 Task 2: Checkout Page */}
+              <Route
+                path="/checkout"
+                element={
+                  user ? (
+                    <Checkout user={user} />
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+
+              {/* Lab 06 Task 6: Order Success Confirmation */}
+              <Route
+                path="/order-success/:id"
+                element={<OrderSuccess user={user} />}
+              />
+
+              {/* Lab 06 Task 8: My Orders Page */}
+              <Route
+                path="/orders"
+                element={
+                  user ? (
+                    <Orders user={user} />
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+
+              {/* Lab 06 Task 17: Single Order Details Page */}
+              <Route
+                path="/orders/:id"
+                element={<OrderDetails user={user} />}
               />
 
               {/* Catch-all fallback */}
